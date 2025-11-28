@@ -90,6 +90,35 @@ const LiveVoiceAgent: React.FC<LiveVoiceAgentProps> = ({ isOpen, onClose, initia
         }
     }, [isOpen]);
 
+    const playScanCompleteSound = async () => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            if (ctx.state === 'suspended') await ctx.resume();
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type = 'sine';
+            const now = ctx.currentTime;
+            
+            // Double high-pitched beep for success
+            osc.frequency.setValueAtTime(880, now); // A5
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            
+            osc.frequency.setValueAtTime(1760, now + 0.15); // A6
+            gain.gain.setValueAtTime(0.1, now + 0.15);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+            osc.start(now);
+            osc.stop(now + 0.5);
+        } catch (e) { console.error(e); }
+    };
+
     // --- Drag Logic ---
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
@@ -348,10 +377,14 @@ const LiveVoiceAgent: React.FC<LiveVoiceAgentProps> = ({ isOpen, onClose, initia
     useEffect(() => {
         if (scanResult && scanResult !== prevScanResultRef.current && isConnected) {
             prevScanResultRef.current = scanResult;
+            
+            // Play success sound
+            playScanCompleteSound();
+
             if (sessionPromiseRef.current) {
                 sessionPromiseRef.current.then(session => {
                     session.sendRealtimeInput({ 
-                        content: [{ parts: [{ text: `System Update: Scan Results: ${JSON.stringify(scanResult)}. Summarize these and ask to proceed.` }] }] 
+                        content: [{ parts: [{ text: `System: VISUAL SCAN COMPLETED SUCCESSFULLY. Acknowledge this immediately. Result Data: ${JSON.stringify(scanResult)}. Summarize the device findings to the user and suggest next steps.` }] }] 
                     });
                 });
             }
