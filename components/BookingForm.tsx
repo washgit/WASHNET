@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Send, Smartphone, Laptop, Server, Cpu, FileText, CheckCircle, Mail, MapPin, Download } from 'lucide-react';
+import { X, Send, Smartphone, Laptop, Server, Cpu, FileText, CheckCircle, Mail, MapPin, Download, ScanEye } from 'lucide-react';
 import { jsPDF } from "jspdf";
 
 export interface BookingData {
@@ -17,9 +17,10 @@ interface BookingFormProps {
     isOpen: boolean;
     onClose: () => void;
     initialData?: BookingData;
+    onOpenScanner: () => void;
 }
 
-const BookingForm: React.FC<BookingFormProps> = ({ isOpen, onClose, initialData }) => {
+const BookingForm: React.FC<BookingFormProps> = ({ isOpen, onClose, initialData, onOpenScanner }) => {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -141,7 +142,6 @@ const BookingForm: React.FC<BookingFormProps> = ({ isOpen, onClose, initialData 
         setIsGenerating(true);
 
         // 1. Initiate Formspree Submission (Async)
-        // This sends the email to you via the provided Formspree link
         const formspreePromise = fetch("https://formspree.io/f/mdkraqzb", {
             method: "POST",
             headers: {
@@ -150,21 +150,19 @@ const BookingForm: React.FC<BookingFormProps> = ({ isOpen, onClose, initialData 
             },
             body: JSON.stringify({
                 ...formData,
-                _replyto: formData.email, // Ensure reply-to is set
+                _replyto: formData.email, 
                 _subject: `Apple911 New Booking: ${formData.name} (${formData.deviceType})`,
             })
         }).then(res => {
             if (!res.ok) console.warn("Email submission non-200 status:", res.status);
         }).catch(err => {
             console.error("Formspree Submission Error:", err);
-            // We catch error so it doesn't block the user flow
         });
 
         // 2. Generate & Download PDF
         const refId = generateJobCardPDF();
 
-        // 3. Wait a moment for download to start visually AND for Formspree to finish
-        // This ensures the user sees the 'generating' state for at least 1.5s
+        // 3. Wait for download & submission
         await Promise.all([
             new Promise(resolve => setTimeout(resolve, 1500)),
             formspreePromise
@@ -213,6 +211,27 @@ Please see the attached file for full details of my request.
                 {/* Form Content */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 relative z-10 overflow-y-auto custom-scrollbar">
                     
+                    {/* Visual Scan Prompt Tab */}
+                    <div 
+                        className="bg-cyan-900/10 border border-cyan-500/50 p-3 rounded-lg flex justify-between items-center group cursor-pointer hover:bg-cyan-500/10 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all active:scale-[0.98]" 
+                        onClick={onOpenScanner}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="bg-cyan-900/30 p-2 rounded-full text-cyan-400 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+                                <ScanEye size={20} className="animate-pulse" />
+                            </div>
+                            <div>
+                                <h4 className="text-cyan-400 text-xs font-bold font-mono tracking-wider flex items-center gap-2">
+                                    VISUAL DIAGNOSTIC SCAN <span className="bg-cyan-500 text-black text-[9px] px-1 rounded animate-pulse">ACTIVE</span>
+                                </h4>
+                                <p className="text-[10px] text-gray-400 font-mono">ACTIVATE CAMERA FOR DEVICE ID</p>
+                            </div>
+                        </div>
+                        <div className="text-cyan-500 font-mono text-xs border border-cyan-500/50 px-3 py-1.5 rounded hover:bg-cyan-500 hover:text-black transition-colors font-bold tracking-wider">
+                            INITIATE
+                        </div>
+                    </div>
+
                     {/* Personal Info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">

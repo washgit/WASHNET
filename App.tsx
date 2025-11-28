@@ -4,12 +4,13 @@ import {
   Calendar, Phone, MapPin, Clock, FileText, 
   MessageSquare, Mic, X, Globe, Box, Layers, Target, 
   Wifi, Shield, Cpu, Server, Monitor, 
-  Wrench, CloudLightning, MousePointer, Smartphone, ShoppingBag, ExternalLink, Zap, Laptop, FileCheck
+  Wrench, CloudLightning, MousePointer, Smartphone, ShoppingBag, ExternalLink, Zap, Laptop, FileCheck, CheckCircle
 } from 'lucide-react';
 
 import ChatBot from './components/ChatBot'; 
 import LiveVoiceAgent from './components/LiveVoiceAgent';
 import BookingForm, { BookingData } from './components/BookingForm';
+import ScanAnalyzer, { ScanResult } from './components/ScanAnalyzer';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -30,6 +31,10 @@ const App: React.FC = () => {
   // Smart Booking Form State
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [bookingFormData, setBookingFormData] = useState<BookingData | undefined>(undefined);
+
+  // Scan Analyzer State
+  const [isScanAnalyzerOpen, setIsScanAnalyzerOpen] = useState(false);
+  const [lastScanResult, setLastScanResult] = useState<ScanResult | null>(null);
 
   // Satellite Map Modal State
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -71,6 +76,26 @@ const App: React.FC = () => {
       setIsBookingFormOpen(true);
   };
 
+  const handleOpenScanAnalyzer = () => {
+      setIsScanAnalyzerOpen(true);
+  };
+
+  const handleScanComplete = (result: ScanResult) => {
+      setIsScanAnalyzerOpen(false);
+      setLastScanResult(result);
+      
+      // Auto-populate booking form data for potential use
+      setBookingFormData(prev => ({
+          ...prev,
+          deviceType: result.deviceType,
+          description: result.description + (result.serialNumber ? ` [SN: ${result.serialNumber}]` : '')
+      }));
+  };
+
+  const handleNavigation = (section: string) => {
+      setActiveTab(section);
+  };
+
   useEffect(() => {
     const checkStatus = () => {
       const now = new Date();
@@ -97,6 +122,14 @@ const App: React.FC = () => {
     }
   }, [isMapOpen]);
 
+  // Handle 'book-now' tab action
+  useEffect(() => {
+    if (activeTab === 'book-now') {
+      handleBook("I need to deploy a technician immediately.");
+      setActiveTab('home');
+    }
+  }, [activeTab]);
+
   // --- COMPONENTS ---
 
   const NeonClock = () => {
@@ -119,7 +152,6 @@ const App: React.FC = () => {
     const minutes = time.getMinutes();
     const hours = time.getHours();
     
-    // Degrees
     const secDeg = seconds * 6;
     const minDeg = minutes * 6 + seconds * 0.1;
     const hourDeg = (hours % 12) * 30 + minutes * 0.5;
@@ -127,7 +159,6 @@ const App: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center animate-fade-in-up">
             <div className="relative w-48 h-48 md:w-64 md:h-64 group cursor-default transition-all hover:scale-105">
-                 {/* SVG HUD Background */}
                  <svg viewBox="0 0 24 30" className="w-full h-full drop-shadow-[0_0_10px_rgba(6,182,212,0.6)] overflow-visible">
                      <defs>
                        <pattern id="gridPattern" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -140,13 +171,11 @@ const App: React.FC = () => {
                               <feMergeNode in="SourceGraphic"/>
                           </feMerge>
                        </filter>
-                       {/* Mask for internal elements like grid/rings to stay inside apple */}
                        <mask id="appleMask">
                           <path d="M16.51 14.54c-.04 2.21 1.94 2.96 2.03 2.99-.01.04-.31 1.08-1.04 2.14-.94 1.36-1.89 1.37-3.34 1.39-1.45.01-1.91-.86-3.57-.86-1.66 0-2.2.85-3.59.88-1.44.03-2.54-1.45-3.46-2.78-1.88-2.72-3.31-7.68-1.38-11.02.95-1.65 2.65-2.7 4.5-2.73 1.41-.03 2.75.95 3.61.95.85 0 2.46-1.18 4.14-1 0.7.03 2.68.28 3.94 2.13-.1.07-2.35 1.37-2.35 4.21z" fill="white" />
                        </mask>
                      </defs>
                      
-                     {/* Leaf Outline */}
                      <path d="M12.92 4.46c.74-.89 1.24-2.13 1.11-3.33-1.06.04-2.34.73-3.1 1.62-.67.78-1.26 2.04-1.1 3.24 1.18.09 2.37-.63 3.09-1.53z" 
                            fill="none"
                            stroke="#22d3ee"
@@ -154,7 +183,6 @@ const App: React.FC = () => {
                            filter="url(#neonGlow)"
                      />
                      
-                     {/* Apple Body Outline */}
                      <path d="M16.51 14.54c-.04 2.21 1.94 2.96 2.03 2.99-.01.04-.31 1.08-1.04 2.14-.94 1.36-1.89 1.37-3.34 1.39-1.45.01-1.91-.86-3.57-.86-1.66 0-2.2.85-3.59.88-1.44.03-2.54-1.45-3.46-2.78-1.88-2.72-3.31-7.68-1.38-11.02.95-1.65 2.65-2.7 4.5-2.73 1.41-.03 2.75.95 3.61.95.85 0 2.46-1.18 4.14-1 0.7.03 2.68.28 3.94 2.13-.1.07-2.35 1.37-2.35 4.21z" 
                            fill="rgba(15, 23, 42, 0.4)" 
                            stroke="#22d3ee" 
@@ -163,19 +191,14 @@ const App: React.FC = () => {
                            filter="url(#neonGlow)"
                      />
                      
-                     {/* Internal Tech Elements (Masked) */}
                      <g mask="url(#appleMask)">
-                         {/* Grid Background */}
                          <rect x="0" y="0" width="24" height="30" fill="url(#gridPattern)" />
-                         
-                         {/* Rotating Data Rings (Centered at apple body center approx 12, 16) */}
                          <g transform="translate(12, 16)">
                              <circle r="7" fill="none" stroke="#22d3ee" strokeWidth="0.1" strokeDasharray="1 1" className="animate-[spin_20s_linear_infinite] opacity-50" />
                              <circle r="5" fill="none" stroke="#a855f7" strokeWidth="0.1" strokeDasharray="4 2" className="animate-[spin_15s_linear_infinite_reverse] opacity-40" />
                          </g>
                      </g>
                      
-                     {/* Scanning Line */}
                       <line x1="0" y1="0" x2="24" y2="0" stroke="rgba(34,211,238,0.5)" strokeWidth="0.2" className="animate-[scan_4s_linear_infinite]" />
                        <style>{`
                           @keyframes scan {
@@ -187,32 +210,22 @@ const App: React.FC = () => {
                         `}</style>
                   </svg>
 
-                  {/* Clock Elements - Centered in Apple Body */}
                   <div className="absolute top-[54%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] flex items-center justify-center">
-                     
-                     {/* Hands Container */}
                      <div className="relative w-full h-full z-10">
-                         {/* Ticks Ring */}
                          <div className="absolute inset-0 border border-cyan-500/20 rounded-full scale-90"></div>
-                         
-                         {/* Hour Hand */}
                          <div className="absolute inset-0 flex items-center justify-center" style={{ transform: `rotate(${hourDeg}deg)` }}>
                               <div className="w-1.5 h-[35%] bg-purple-500 rounded-sm absolute bottom-1/2 origin-bottom shadow-[0_0_8px_#a855f7] border border-purple-300"></div>
                          </div>
-                         {/* Minute Hand */}
                          <div className="absolute inset-0 flex items-center justify-center" style={{ transform: `rotate(${minDeg}deg)` }}>
                               <div className="w-1 h-[45%] bg-cyan-400 rounded-sm absolute bottom-1/2 origin-bottom shadow-[0_0_8px_#22d3ee] border border-cyan-200"></div>
                          </div>
-                         {/* Second Hand */}
                          <div className="absolute inset-0 flex items-center justify-center" style={{ transform: `rotate(${secDeg}deg)` }}>
                               <div className="w-0.5 h-[50%] bg-red-500/80 absolute bottom-1/2 origin-bottom shadow-[0_0_5px_#ef4444]"></div>
                               <div className="w-2 h-2 bg-red-500 rounded-full absolute top-[calc(50%-4px)] shadow-[0_0_5px_#ef4444]"></div>
                          </div>
-                         {/* Center Nut */}
                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gray-900 border-2 border-cyan-400 rounded-full z-20"></div>
                      </div>
                      
-                     {/* Digital Text Overlay - NEON CYAN */}
                      <div className="absolute top-[75%] left-1/2 -translate-x-1/2 flex flex-col items-center w-full z-0 pointer-events-none">
                          <div className="text-lg md:text-2xl font-mono font-bold text-cyan-400 tracking-[0.2em] drop-shadow-[0_0_10px_rgba(34,211,238,0.9)] bg-black/60 px-4 py-1 rounded border border-cyan-400/50 backdrop-blur-md shadow-[inset_0_0_10px_rgba(34,211,238,0.3)]">
                             {formatTime(time)}
@@ -288,22 +301,18 @@ const App: React.FC = () => {
 
   const ITHero = () => (
     <div className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-gray-950 min-h-[90vh] flex items-center">
-      {/* Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_100%)] pointer-events-none"></div>
       
-      {/* Glowing Orbs */}
       <div className="absolute top-20 right-0 w-96 h-96 bg-cyan-900/30 rounded-full blur-[128px] pointer-events-none animate-pulse-slow"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-900/30 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
          
          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-             {/* Left Column: Clock */}
              <div className="flex-shrink-0 animate-fade-in-up">
                  <NeonClock />
              </div>
 
-             {/* Right Column: Content */}
              <div className="text-center lg:text-left flex-1">
                  <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 text-cyan-400 px-4 py-2 rounded-full text-xs font-mono mb-8 animate-fade-in-up backdrop-blur-md">
                     <span className="relative flex h-2 w-2">
@@ -375,7 +384,6 @@ const App: React.FC = () => {
                     }
                 ].map((service, index) => (
                     <div key={index} className="bg-gray-900/50 backdrop-blur-sm p-8 border border-white/5 hover:border-cyan-500/30 transition-all hover:-translate-y-2 group relative overflow-hidden">
-                        {/* Hover Gradient */}
                         <div className={`absolute inset-0 bg-gradient-to-br from-${service.color}-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                         
                         <div className={`w-14 h-14 bg-${service.color}-900/20 border border-${service.color}-500/30 text-${service.color}-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
@@ -462,7 +470,6 @@ const App: React.FC = () => {
 
   const HomeLocationSection = () => (
     <div className="py-24 bg-gray-950 relative border-t border-white/5">
-         {/* Background glow similar to other sections */}
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
          
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -475,7 +482,6 @@ const App: React.FC = () => {
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                {/* Hours */}
                 <div className="bg-gray-900/30 backdrop-blur-sm p-8 border border-white/10 rounded-sm relative group overflow-hidden">
                     <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
@@ -506,7 +512,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Location Map Trigger */}
                 <div className="bg-gray-900/30 backdrop-blur-sm p-1 border border-white/10 rounded-sm relative group">
                     <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     
@@ -514,7 +519,6 @@ const App: React.FC = () => {
                         onClick={() => setIsMapOpen(true)}
                         className="relative w-full h-full min-h-[200px] bg-gray-950 overflow-hidden group/btn"
                     >
-                         {/* Fake Map Background */}
                          <div className="absolute inset-0 opacity-50 grayscale group-hover/btn:grayscale-0 transition-all duration-700" 
                               style={{ 
                                   backgroundImage: 'url("https://vtc.vn/img/no-image-found.jpg")', 
@@ -523,10 +527,7 @@ const App: React.FC = () => {
                               }}
                          ></div>
                          
-                         {/* Overlay */}
                          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-80"></div>
-                         
-                         {/* Grid Lines */}
                          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
 
                          <div className="absolute bottom-6 left-6 text-left z-10">
@@ -553,150 +554,19 @@ const App: React.FC = () => {
   );
 
   const renderContent = () => {
-    switch(activeTab) {
-      case 'home':
-        return (
-          <>
-            <ITHero />
-            <ITServices />
-            <HomeLocationSection />
-          </>
-        );
-      case 'services':
-        return <ITServices />;
-      case 'remote':
-        return <RemoteSupport />;
-      case 'book-now':
-        return (
-          <div className="min-h-screen pt-32 pb-20 px-4 max-w-2xl mx-auto text-center animate-fade-in-up">
-            <h2 className="text-3xl font-bold mb-8 text-white font-mono">CONTACT_HQ</h2>
-            
-            <div className="bg-gray-900/80 p-8 border border-white/10 backdrop-blur-md mb-8 relative overflow-hidden group">
-               <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-               <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                 <Calendar className="text-cyan-400" size={36} />
-               </div>
-               <p className="text-gray-400 mb-8 text-lg">
-                 Schedule precision hardware repair or on-site deployment.
-                 <br/><span className="text-sm text-gray-500 mt-2 block font-mono">AI DIAGNOSTICS ONLINE</span>
-               </p>
-               
-               <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-                  <button 
-                    onClick={() => handleDirectChat("Hi, I'd like a quote for IT services.")}
-                    className="flex items-center justify-center gap-3 bg-cyan-600 text-black px-6 py-4 font-bold text-lg hover:bg-cyan-500 transition-all w-full sm:w-auto font-mono"
-                  >
-                    <MessageSquare size={24} />
-                    AI CHAT
-                  </button>
-                  <button 
-                    onClick={() => setIsVoiceOpen(true)}
-                    className="flex items-center justify-center gap-3 bg-white/10 text-white px-6 py-4 font-bold text-lg hover:bg-white/20 w-full sm:w-auto transition-all backdrop-blur-sm border border-white/10 font-mono"
-                  >
-                    <Mic size={24} />
-                    VOICE AGENT
-                  </button>
-               </div>
-            </div>
-
-            <div className="bg-blue-900/10 p-6 border border-blue-500/20 text-left mb-8">
-              <h3 className="font-bold text-blue-400 mb-4 flex items-center gap-2 font-mono">
-                <FileText size={20} /> SERVICE_POLICIES
-              </h3>
-              <ul className="space-y-3 text-sm text-gray-400 font-mono">
-                 <li className="flex gap-2">
-                    <span className="text-blue-500">>></span> 
-                    <span>Call-out fees apply for on-site recon.</span>
-                 </li>
-                 <li className="flex gap-2">
-                    <span className="text-blue-500">>></span> 
-                    <span>Hardware repairs: <strong>50% deposit</strong> required.</span>
-                 </li>
-                 <li className="flex gap-2">
-                    <span className="text-blue-500">>></span> 
-                    <span>Remote assistance is prepaid.</span>
-                 </li>
-                 <li className="flex gap-2">
-                    <span className="text-blue-500">>></span> 
-                    <span><strong>30-day warranty</strong> on all workmanship.</span>
-                 </li>
-              </ul>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-900/80 p-6 border border-white/10 text-left relative overflow-hidden group">
-                    <div className={`absolute top-4 right-4 px-3 py-1 text-[10px] font-bold tracking-wider flex items-center gap-2 border transition-all duration-500 font-mono ${
-                        isOpen 
-                        ? 'bg-green-500/10 text-green-500 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.4)]' 
-                        : 'bg-red-900/20 text-red-500 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
-                    }`}>
-                        <div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`}></div>
-                        {isOpen ? 'ONLINE' : 'OFFLINE'}
-                    </div>
-
-                    <h3 className="font-bold text-white mb-6 flex items-center gap-2 font-mono">
-                        <Clock size={20} className="text-cyan-500" /> 
-                        OPS HOURS
-                    </h3>
-                    <div className="space-y-3 text-sm font-mono text-gray-400">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                            <span>Mon - Fri</span>
-                            <span className="text-white">08:00 - 17:00</span>
-                        </div>
-                        <div className="flex justify-between items-center pb-2">
-                            <span>Sat - Sun</span>
-                            <span className="text-red-500">EMERGENCY ONLY</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-gray-900/80 p-6 border border-white/10 text-left flex flex-col justify-between">
-                    <div>
-                        <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-mono">
-                            <MapPin size={20} className="text-cyan-500" /> 
-                            COORDS
-                        </h3>
-                        <p className="text-gray-400 text-sm leading-relaxed mb-4 font-mono">
-                            {addressText}
-                        </p>
-                    </div>
-                    
-                    <button 
-                        onClick={() => setIsMapOpen(true)}
-                        className="group relative w-full h-24 overflow-hidden border border-cyan-500/30 mt-auto bg-gray-950"
-                    >
-                         <div className="absolute inset-0 bg-cyan-900/20 group-hover:bg-cyan-500/20 transition-colors flex items-center justify-center z-10">
-                             <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs bg-gray-950/80 backdrop-blur-md px-3 py-1.5 border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)] font-mono">
-                                <Globe size={14} className="animate-pulse" /> SATELLITE_FEED
-                             </div>
-                         </div>
-                         {/* Grid Pattern */}
-                         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px] opacity-30"></div>
-                    </button>
-                </div>
-            </div>
-
-             <div className="mt-12 flex justify-center pb-12">
-                <a 
-                  href={`https://wa.me/27${whatsappNumber.substring(1)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-3 text-white bg-green-600/10 p-4 border border-green-500/30 hover:bg-green-600/20 transition-all group w-full md:w-auto"
-                >
-                  <span className="p-1 bg-[#25D366] text-white rounded shadow-lg group-hover:shadow-[0_0_15px_#25D366] transition-shadow"><Smartphone size={18}/></span> 
-                  <span className="font-bold font-mono tracking-wider">{whatsappNumber}</span>
-                  <span className="text-green-400 text-xs uppercase font-bold tracking-widest">[WHATSAPP]</span>
-                </a>
-             </div>
-          </div>
-        );
-      default:
-        return (
-            <>
-              <ITHero />
-              <ITServices />
-            </>
-        );
+    switch (activeTab) {
+        case 'services':
+            return <ITServices />;
+        case 'remote':
+            return <RemoteSupport />;
+        case 'home':
+        default:
+            return (
+                <>
+                    <ITHero />
+                    <HomeLocationSection />
+                </>
+            );
     }
   };
 
@@ -708,7 +578,7 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
 
-      {/* Booking Choice Modal */}
+      {/* Modals & Forms */}
       {isBookingChoiceOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-fade-in-up">
             <div className="bg-gray-900 border border-white/10 w-full max-w-lg overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)]">
@@ -763,7 +633,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Cyber FBI Satellite Map Modal */}
       {isMapOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950/95 p-4 animate-fade-in-up" onClick={() => setIsMapOpen(false)}>
             <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,255,255,0.06),rgba(0,0,255,0.06))] z-0 pointer-events-none bg-[length:100%_4px,3px_100%] opacity-20"></div>
@@ -850,7 +719,6 @@ const App: React.FC = () => {
                              </div>
                         )}
                         
-                        {/* HUD Corners */}
                         <div className="absolute top-8 left-8 w-16 h-16 border-t-2 border-l-2 border-cyan-500/50"></div>
                         <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-cyan-500/50"></div>
                         <div className="absolute bottom-8 left-8 w-16 h-16 border-b-2 border-l-2 border-cyan-500/50"></div>
@@ -877,6 +745,14 @@ const App: React.FC = () => {
          isOpen={isBookingFormOpen}
          onClose={() => setIsBookingFormOpen(false)}
          initialData={bookingFormData}
+         onOpenScanner={handleOpenScanAnalyzer}
+      />
+
+      {/* Scan Analyzer */}
+      <ScanAnalyzer 
+          isOpen={isScanAnalyzerOpen}
+          onClose={() => setIsScanAnalyzerOpen(false)}
+          onScanComplete={handleScanComplete}
       />
 
       {/* Persistent ChatBot */}
@@ -893,6 +769,9 @@ const App: React.FC = () => {
           onClose={() => setIsVoiceOpen(false)} 
           initialContext={pendingBookingContext}
           openBookingForm={handleOpenBookingForm}
+          openScanAnalyzer={handleOpenScanAnalyzer}
+          scanResult={lastScanResult}
+          onNavigate={handleNavigation}
       />
 
       {/* Floating Action Button for Voice */}
